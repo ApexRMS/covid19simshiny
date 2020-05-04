@@ -8,13 +8,14 @@
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Get output files from "data" folder
-outputFiles <- list.files(paste0(dirname(getwd()), "/data/"), pattern="model-output")
+datafolder = "c:/gitprojects/covid19sim/data"
+outputFiles <- list.files(datafolder, pattern="model-output")
 
 # Confirm there are exactly 4 output files
 if(!length(outputFiles) == 4){stop(paste("There are", length(outputFiles), "output files, instead of 4"))}
 
 # Copy files to "shiny/covid19canada/data" folder
-file.copy(paste0(dirname(getwd()), "/data/", outputFiles), "covid19canada/data", overwrite=T)
+file.copy(paste0(datafolder,"/", outputFiles), paste0(getwd(),"/covid19canada/data/"), overwrite=T)
 
 # deploy the app
 library(rsconnect)
@@ -25,5 +26,5 @@ userSecret = readline(prompt="Enter rsconnect secret: ")
 
 rsconnect::setAccountInfo(name=userName, token=userToken, secret=userSecret)
 
-shinyAppDir = "C:/gitprojects/covid19sim/shiny/covid19canada"
+shinyAppDir = "C:/gitprojects/covid19simshiny/src/covid19canada"
 rsconnect::deployApp(shinyAppDir)
