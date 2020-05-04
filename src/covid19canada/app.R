@@ -151,7 +151,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
     
     mainPanel(
       
-      titlePanel(h2("COVID-19 Forecasts Using SyncroSim", align="center")),
+      titlePanel(h2("COVID-19 Forecasts For Canada", align="center")),
       
       tabsetPanel(
                   tabPanel("Deaths",
