@@ -4,8 +4,9 @@
 
 #### Workspace ####
 # Packages
-# remotes::install_github("rstudio/shiny#2740")
-# remotes::install_github("rstudio/thematic")
+#remotes::install_github("rstudio/thematic")
+#remotes::install_github("rstudio/shiny#2740")
+
 library(tidyverse)
 library(magrittr)
 library(shiny)
@@ -73,36 +74,46 @@ forecastDates <- sort(unique(data$date_model_run))
 minDate <- min(data$Date)
 maxDate <- max(data$Date)
 jurisdictions <- sort(unique(data$Jurisdiction))
-whiteTheme <- theme(#panel.background = element_rect(fill = NA),
-                    #panel.border = element_rect(fill = NA, color = "grey75"),
-                    #axis.ticks = element_line(color = "grey55"),
-                    #panel.grid.major = element_line(color = "grey95", size = 0.2),
-                    #panel.grid.minor = element_line(color = "grey95", size = 0.2),
+whiteTheme <- theme(panel.background = element_rect(fill = "grey95"),
+                    panel.border = element_rect(fill = NA, color = "grey75"),
+                    axis.ticks = element_line(color = "grey55"),
+                    panel.grid.major = element_line(color = "grey85", size = 0.2),
+                    panel.grid.minor = element_line(color = "grey85", size = 0.2),
                     plot.title = element_text(hjust=0.5, size=18),
                     axis.title = element_text(size=18),
                     strip.text = element_text(size=18),
                     axis.text = element_text(size=14),
                     legend.key = element_rect(fill = NA),
-                    legend.text = element_text(size=14),
+                    legend.text = element_text(size=14,margin = margin(r = 30, unit = "pt")),
                     legend.title = element_blank())
 
 #### UI ####
+# css <- HTML(" body {
+#             background-color: #000000;
+#             }")
 
 ui <- fluidPage(title = "COVID-19 SyncroSim",
-  theme = shinythemes::shinytheme("darkly"),
+                #tags$head(tags$style(css)),
+  theme = shinythemes::shinytheme("flatly"),
   titlePanel(column(width = 12, 
-                    a(img(src = "WWW/cropped-SyncroSim-Logo.png"), href="https://syncrosim.com"))),
+                    a(img(src = "SyncroSim-Logo.png"), href="https://syncrosim.com"))),
 
   br(),
   
   sidebarLayout(
     
-    sidebarPanel(width=3, h3("Forecast Explorer"),
-                 hr(),
-      selectInput("forecastDate", 
-        label = "Model Run Date",
-         choices = forecastDates,
-          selected = max(forecastDates)),
+    sidebarPanel(width=3,
+                 dateInput("forecastDate", 
+                          label = "Model Run Date",
+                          value = max(forecastDates),
+                          min = min(forecastDates),
+                          max = max(forecastDates),
+                          format = "yyyy-mm-dd",
+                          startview = "month"),
+      # selectInput("forecastDate2", 
+      #   label = "Model Run Date",
+      #    choices = forecastDates,
+      #     selected = max(forecastDates)),
       bsTooltip("forecastDate", "Choose date of model run and show forecasts", placement="right"),
       
       checkboxGroupInput("juris", 
@@ -118,7 +129,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                      width="100%"),
       bsTooltip("logY", "Plot data on a log scale", placement="right"),
       
-      sliderInput("range", width="100%", label = "Filter Date Range",
+      sliderInput("range", width="100%", label = "Date Range",
                  min = minDate, max = maxDate, value = c(minDate, maxDate), 
                  step = 1),
       bsTooltip("range", "Select a range of dates to plot forecasts", placement="right"),
@@ -143,13 +154,13 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
       titlePanel(h2("COVID-19 Forecasts Using SyncroSim", align="center")),
       
       tabsetPanel(
-                  tabPanel("Infections",
-                           fluidRow(column(12, align="center",
-                                           plotOutput("chart", width="100%", height="600px")))),
-                  
                   tabPanel("Deaths",
                            fluidRow(column(12, align="center",
-                                           plotOutput("chart2", width="100%", height="600px")))))
+                                           plotOutput("chart2", width="100%", height="600px")))),
+                  
+                  tabPanel("Infections",
+                           fluidRow(column(12, align="center",
+                                           plotOutput("chart", width="100%", height="600px")))))
         
         )
   )
@@ -172,8 +183,8 @@ server <- function(input, output) {
       geom_ribbon(data=dataSubset[which(dataSubset$DataType=="Modeled"),], aes(ymin=Lower, ymax=Upper, fill=Jurisdiction), alpha=0.3, color=NA, show.legend=F) +
       geom_line(aes(linetype=DataType), size=1) +
       scale_linetype_manual(values=c("Observed"="solid", "Modeled"="dotted"), labels=c("Observed", 'Modeled (95% Confidence Interval)')) +
-      #scale_color_manual(values=jurisdictionLineColor) +
-      #scale_fill_manual(values=jurisdictionLineColor) +
+      scale_color_manual(values=jurisdictionLineColor) +
+      scale_fill_manual(values=jurisdictionLineColor) +
       guides(color=F, linetype=F) +
       scale_y_continuous(name="Number of people", labels=scales::label_comma(), trans=ifelse(input$logY, "log10", "identity")) +
       whiteTheme +
@@ -185,7 +196,7 @@ server <- function(input, output) {
     # Produce legend for Jurisdictions
     jurisdictionLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=Jurisdiction)) + 
       geom_line(size=1) +
-      #scale_color_manual(values=jurisdictionLineColor) +
+      scale_color_manual(values=jurisdictionLineColor) +
       whiteTheme +
       theme(legend.position = "top", 
             legend.justification = "center",
@@ -198,13 +209,14 @@ server <- function(input, output) {
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataType), alpha=0.3, color=NA) +
       geom_line(aes(linetype=DataType), size=1) +
       scale_linetype_manual(values=c("Observed"="solid", "Modeled"="dotted"), labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
-      #scale_fill_manual(values=jurisdictionLineColor, labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
+      scale_fill_manual(values=jurisdictionLineColor, labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
       guides(fill=F) +
       whiteTheme +
       theme(legend.position = "top", 
             legend.justification = "center",
             legend.margin=margin(0,0,0,0),
-            legend.key = element_rect(fill="white"))
+            legend.key = element_rect(fill = "grey95"),
+            legend.key.width = unit(2,"cm"))
     
     typeLegend <- get_legend(typeLegend)
     
@@ -231,8 +243,8 @@ server <- function(input, output) {
       geom_ribbon(data=dataSubset[which(dataSubset$DataType=="Modeled"),], aes(ymin=Lower, ymax=Upper, fill=Jurisdiction), alpha=0.3, color=NA, show.legend=F) +
       geom_line(aes(linetype=DataType), size=1) +
       scale_linetype_manual(values=c("Observed"="solid", "Modeled"="dotted"), labels=c("Observed", 'Modeled (95% Confidence Interval)')) +
-      #scale_color_manual(values=jurisdictionLineColor) +
-      #scale_fill_manual(values=jurisdictionLineColor) +
+      scale_color_manual(values=jurisdictionLineColor) +
+      scale_fill_manual(values=jurisdictionLineColor) +
       guides(color=F, linetype=F) +
       scale_y_continuous(name="Number of people", labels=scales::label_comma(), trans=ifelse(input$logY, "log10", "identity")) +
       whiteTheme +
@@ -244,7 +256,7 @@ server <- function(input, output) {
     # Produce legend for Jurisdictions
     jurisdictionLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=Jurisdiction)) + 
       geom_line(size=1) +
-      #scale_color_manual(values=jurisdictionLineColor) +
+      scale_color_manual(values=jurisdictionLineColor) +
       whiteTheme +
       theme(legend.position = "top", 
             legend.justification = "center",
@@ -257,13 +269,14 @@ server <- function(input, output) {
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataType), alpha=0.3, color=NA) +
       geom_line(aes(linetype=DataType), size=1) +
       scale_linetype_manual(values=c("Observed"="solid", "Modeled"="dotted"), labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
-      #scale_fill_manual(values=jurisdictionLineColor, labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
+      scale_fill_manual(values=jurisdictionLineColor, labels=c("Observed"="Observed", "Modeled"='Modeled (95% Confidence Interval)')) +
       guides(fill=F) +
       whiteTheme +
       theme(legend.position = "top", 
             legend.justification = "center",
             legend.margin=margin(0,0,0,0),
-            legend.key = element_rect(fill="white"))
+            legend.key = element_rect(fill = "grey95"),
+            legend.key.width = unit(2,"cm"))
     
     typeLegend <- get_legend(typeLegend)
     
