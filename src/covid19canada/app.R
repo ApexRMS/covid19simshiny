@@ -74,26 +74,44 @@ forecastDates <- sort(unique(data$date_model_run))
 minDate <- min(data$Date)
 maxDate <- max(data$Date)
 jurisdictions <- sort(unique(data$Jurisdiction))
-whiteTheme <- theme(panel.background = element_rect(fill = "grey95"),
+whiteTheme <- theme(panel.background = element_rect(fill = "#f9f9f9"),
                     panel.border = element_rect(fill = NA, color = "grey75"),
                     axis.ticks = element_line(color = "grey55"),
                     panel.grid.major = element_line(color = "grey85", size = 0.2),
                     panel.grid.minor = element_line(color = "grey85", size = 0.2),
                     plot.title = element_text(hjust=0.5, size=18),
                     axis.title = element_text(size=18),
-                    strip.text = element_text(size=18),
+                    strip.text = element_text(size=18, color="white", margin=margin(t=10, b=10)),
+                    strip.background = element_rect(fill="#7d1428"),
                     axis.text = element_text(size=14),
                     legend.key = element_rect(fill = NA),
                     legend.text = element_text(size=14,margin = margin(r = 30, unit = "pt")),
                     legend.title = element_blank())
 
 #### UI ####
-# css <- HTML(" body {
-#             background-color: #000000;
-#             }")
 
-ui <- fluidPage(title = "COVID-19 SyncroSim",
-                #tags$head(tags$style(css)),
+
+ui <- fluidPage(title = "COVID-19 SyncroSim", 
+                tags$head(
+                  tags$style(HTML("
+                                  a {
+                                  color: #7d1428;}
+                                  
+                                  a:hover{
+                                  color: #7d1428;}
+                                  
+                                  .nav-pills>li.active>a, .nav-pills>li.active>a:hover, .nav-pills>li.active>a:focus{
+                                  background-color: #7d1428;;
+                                  color: #ffffff;
+                                  padding-right: 10px;
+                                  padding-left: 10px;}
+                                  
+                                  .well {
+                                  background-color: #f9f9f9}"))),
+                
+                
+                
+                
   theme = shinythemes::shinytheme("flatly"),
   titlePanel(column(width = 12, 
                     a(img(src = "SyncroSim-Logo.png"), href="https://syncrosim.com"))),
@@ -153,7 +171,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
       
       titlePanel(h2("COVID-19 Forecasts For Canada", align="center")),
       
-      tabsetPanel(
+      tabsetPanel(type = c("pills"),
                   tabPanel("Deaths",
                            fluidRow(column(12, align="center",
                                            plotOutput("chart2", width="100%", height="600px")))),
