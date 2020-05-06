@@ -167,18 +167,18 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
       
       p(strong("Note that the simulation results presented here are simply a demonstration of the model framework, and should not be considered actual predictions for any of these jurisdictions."))),
     
-    mainPanel(
+    mainPanel(width=9,
       
       titlePanel(h2("COVID-19 Forecasts For Canada", align="center")),
       
       tabsetPanel(type = c("pills"),
                   tabPanel("Deaths",
                            fluidRow(column(12, align="center",
-                                           plotOutput("chart2", width="100%", height="600px")))),
+                                           plotOutput("chart2", width="100%", height="900px")))),
                   
                   tabPanel("Infections",
                            fluidRow(column(12, align="center",
-                                           plotOutput("chart", width="100%", height="600px")))))
+                                           plotOutput("chart", width="100%", height="900px")))))
         
         )
   )
@@ -205,9 +205,9 @@ server <- function(input, output) {
       guides(color=F, linetype=F) +
       scale_y_continuous(name="Number of people", labels=scales::label_comma(), trans=ifelse(input$logY, "log10", "identity")) +
       whiteTheme +
-      facet_wrap(vars(Metric), scales="free_y", ncol=2) +
+      facet_wrap(vars(Metric), scales="free_y", ncol=1) +
       theme(axis.title.x = element_blank(),
-            plot.margin=unit(c(5,5,0,5),"pt"),
+            plot.margin=unit(c(5,5,10,5),"pt"),
             strip.text = element_text(size=16))
     
     # Produce legend for Jurisdictions
@@ -238,7 +238,7 @@ server <- function(input, output) {
     typeLegend <- get_legend(typeLegend)
     
     # Combine plot and legends
-    p <- plot_grid(jurisdictionLegend, typeLegend, plot, ncol=1, rel_heights = c(1,1,15))
+    p <- plot_grid(jurisdictionLegend, typeLegend, plot, ncol=1, rel_heights = c(1,1,30))
     return(p)
   })
   
@@ -265,9 +265,9 @@ server <- function(input, output) {
       guides(color=F, linetype=F) +
       scale_y_continuous(name="Number of people", labels=scales::label_comma(), trans=ifelse(input$logY, "log10", "identity")) +
       whiteTheme +
-      facet_wrap(vars(Metric), scales="free_y", ncol=2) +
+      facet_wrap(vars(Metric), scales="free_y", ncol=1) +
       theme(axis.title.x = element_blank(),
-            plot.margin=unit(c(5,20,0,5),"pt"),
+            plot.margin=unit(c(5,5,10,5),"pt"),
             strip.text = element_text(size=16))
     
     # Produce legend for Jurisdictions
@@ -298,7 +298,7 @@ server <- function(input, output) {
     typeLegend <- get_legend(typeLegend)
     
     # Combine plot and legends
-    p <- plot_grid(jurisdictionLegend, typeLegend, plot, ncol=1, rel_heights = c(1,1,15))
+    p <- plot_grid(jurisdictionLegend, typeLegend, plot, ncol=1, rel_heights = c(1,1,30))
     return(p)
   })
   
