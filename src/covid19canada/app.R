@@ -188,6 +188,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
 server <- function(input, output) {
   
   output$chart <- renderPlot({
+    validate(need(input$juris, 'Select at least one jurisdiction'))
     # Subset data based on user inputs
     dataSubset <- data %>% filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>%
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdictions of interest
@@ -247,6 +248,8 @@ server <- function(input, output) {
   
   
   output$chart2 <- renderPlot({
+    
+    validate(need(input$juris, 'Select at least one jurisdiction'))
     
     # Subset data based on user inputs
     dataSubset <- data %>% filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>%
