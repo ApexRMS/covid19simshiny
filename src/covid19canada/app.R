@@ -188,7 +188,6 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
 server <- function(input, output) {
   
   output$chart <- renderPlot({
-    
     # Subset data based on user inputs
     dataSubset <- data %>% filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>%
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdictions of interest
