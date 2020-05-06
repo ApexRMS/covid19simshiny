@@ -122,7 +122,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
     
     sidebarPanel(width=3,
                  dateInput("forecastDate", 
-                          label = "Model Run Date",
+                          label = "Forecast Date",
                           value = max(forecastDates),
                           min = min(forecastDates),
                           max = max(forecastDates),
