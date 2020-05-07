@@ -27,7 +27,7 @@ onStop(thematic_off)
 
 # Input parameters
 brewer.pal(n = 8, name = "Dark2")
-jurisdictionLineColor <- c("Canada"="red3","Canada - Alberta"="#666666", "Canada - British Columbia"="#A6761D", "Canada - Ontario"="#1B9E77", "Canada - Quebec"="#D95F02", "Observed" = "white", "Modeled" = "black")
+jurisdictionLineColor <- c("Canada"="red3","Canada - Alberta"="#666666", "Canada - British Columbia"="#A6761D", "Canada - Manitoba"="darkorchid", "Canada - Ontario"="#1B9E77", "Canada - Quebec"="#D95F02", "Canada - Nova Scotia"="deeppink","Observed" = "white", "Modeled" = "black")
 
 
 # Output files
