@@ -1,0 +1,10 @@
+name: covid19canada
+title:
+username:
+account: apexrms
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2226944
+bundleId: 3153218
+url: https://apexrms.shinyapps.io/covid19canada/
+when: 1589573500.08158
