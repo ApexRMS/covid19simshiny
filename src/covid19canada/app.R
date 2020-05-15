@@ -191,7 +191,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            bsTooltip("juris", "Select the jurisdiction to plot", placement="right"),
                                            
-                                           fluidRow(column(8,
+                                           fluidRow(column(5,
                                                            checkboxGroupInput("models",
                                                                               label = "Select Models",
                                                                               choices = c("ApexRMS" = "ApexRMS", "IHME" = "IHME"),
@@ -329,7 +329,7 @@ server <- function(input, output) {
                     hjust=0,
                     vjust=1,
                     size=5,
-                    label = paste("No IHME projection available for the selected forecast date.\nShowing the IHME projection from", lastIHMEdate, "instead."))
+                    label = paste("No IHME projection available \nfor the selected forecast date. \nShowing", lastIHMEdate, "instead."))
       }
     }
     
@@ -420,7 +420,7 @@ server <- function(input, output) {
                     hjust=0,
                     vjust=1,
                     size=5,
-                    label = paste("No IHME projection available for the selected forecast date.\nShowing the IHME projection from", lastIHMEdate, "instead."))
+                    label = paste("No IHME projection available \nfor the selected forecast date. \nShowing", lastIHMEdate, "instead."))
       }
     }
     
