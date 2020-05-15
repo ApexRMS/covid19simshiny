@@ -147,6 +147,15 @@ whiteTheme <- theme(panel.background = element_rect(fill = "#f9f9f9"),
                     legend.text = element_text(size=14,margin = margin(r = 30, unit = "pt")),
                     legend.title = element_blank())
 
+mycss <- "
+.mycheckbox .shiny-input-container {
+  display: inline-block;
+  width: auto;
+  height: 0px;
+  padding: 0px;
+  margin-top: -2em;
+}"
+
 #### UI ####
 ui <- fluidPage(title = "COVID-19 SyncroSim",
                 
@@ -174,6 +183,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                 br(),
                 
                 sidebarLayout(sidebarPanel(width=3,
+                                           
                                            dateInput("forecastDate",
                                                      label = "Forecast Date",
                                                      value = defaultForecastDate,
@@ -191,44 +201,47 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            bsTooltip("juris", "Select the jurisdiction to plot", placement="right"),
                                            
-                                           fluidRow(column(5,
-                                                           checkboxGroupInput("models",
-                                                                              label = "Select Models",
-                                                                              choices = c("ApexRMS" = "ApexRMS", "IHME" = "IHME"),
-                                                                              selected = c("ApexRMS", "IHME"))),
-                                                    column(2,
-                                                           br(),
-                                                           actionButton(inputId='ApexRMSLink',
-                                                                        label="",
-                                                                        icon = icon("info-circle"),
-                                                                        onclick ="window.open('http://www.apexrms.com/covid19/', '_blank')",
-                                                                        style = "color: white;
+                                           tags$style(mycss),
+                                           
+                                           p(strong("Select Models")),
+                                           
+                                           span(class="mycheckbox", checkboxInput("ApexRMS", "ApexRMS  ", value=T)),
+                                           
+                                           actionButton(inputId='ApexRMSLink',
+                                                        label="",
+                                                        icon = icon("info-circle"),
+                                                        onclick ="window.open('http://www.apexrms.com/covid19/', '_blank')",
+                                                        style = "color: white;
                                                                         background-color: #7d1428;
                                                                         height: 25px;
                                                                         width: 25px;
                                                                         padding: 0px;
                                                                         border-radius: 20%;
                                                                         border-width: 0px"),
-                                                           
-                                                           br(),br(),
-                                                           
-                                                           actionButton(inputId='IHMELink',
-                                                                        label="",
-                                                                        icon = icon("info-circle"),
-                                                                        onclick ="window.open('http://www.healthdata.org/covid/', '_blank')",
-                                                                        style = "color: white;
+                                           
+                                           br(),
+                                           
+                                           span(class="mycheckbox", checkboxInput("IHME", "IHME  ", value=T)),
+                                           
+                                           actionButton(inputId='IHMELink',
+                                                        label="",
+                                                        icon = icon("info-circle"),
+                                                        onclick ="window.open('http://www.healthdata.org/covid/', '_blank')",
+                                                        style = "color: white;
                                                                         background-color: #7cb961;
                                                                         height: 25px;
                                                                         width: 25px;
                                                                         padding: 0px;
                                                                         border-radius: 20%;
-                                                                        border-width: 0px"))),
+                                                                        border-width: 0px"),
                                            
                                            bsTooltip("models", "Select one or more models to plot", placement="right"),
                                            
                                            bsTooltip("ApexRMSLink", "ApexRMS model details", placement="right"),
                                            
                                            bsTooltip("IHMELink", "IHME model details", placement="right"),
+                                           
+                                           br(),br(),
                                            
                                            materialSwitch("logY",
                                                           label = "Log Y axis",
@@ -264,6 +277,11 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
 server <- function(input, output) {
   
   output$deathChart <- renderPlot({
+    
+    # Get selected models
+    models <- c("ApexRMS", "IHME")
+    models <- models[c(input$ApexRMS, input$IHME)]
+    
     # Get most recent IHME model date
     lastIHMEdate <- data %>%
       filter(Source == "IHME") %>%
@@ -284,7 +302,7 @@ server <- function(input, output) {
       filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
       filter(!((DataTag == "ApexRMS projection") & (!date_model_run == input$forecastDate))) %>% # Remove ApexRMS predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
-      filter(!((DataType == "Modeled") & (!Source %in% input$models))) %>% # Only keep models of interest
+      filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
     
@@ -303,7 +321,7 @@ server <- function(input, output) {
             strip.text = element_text(size=16))
     
     # Add error message if IHME data is missing
-    if("IHME" %in% input$models){
+    if("IHME" %in% models){
       
       # If there is no earlier IHME model
       if(input$forecastDate < oldestIHMEdate){
@@ -353,7 +371,12 @@ server <- function(input, output) {
   })
   
   output$infectionChart <- renderPlot({
-    validate(need(input$models, 'Select at least one model'))
+    # Get selected models
+    models <- c("ApexRMS", "IHME")
+    models <- models[c(input$ApexRMS, input$IHME)]
+    
+    # Check that at least one model was selected
+    validate(need(models, 'Select at least one model.'))
     
     # Get most recent IHME model date
     lastIHMEdate <- data %>%
@@ -375,7 +398,7 @@ server <- function(input, output) {
       filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
       filter(!((DataTag == "ApexRMS projection") & (!date_model_run == input$forecastDate))) %>% # Remove ApexRMS predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
-      filter(!((DataType == "Modeled") & (!Source %in% input$models))) %>% # Only keep models of interest
+      filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
     
@@ -394,7 +417,7 @@ server <- function(input, output) {
             strip.text = element_text(size=16))
     
     # Add error message if IHME data is missing
-    if("IHME" %in% input$models){
+    if("IHME" %in% models){
       
       # If there is no earlier IHME model
       if(input$forecastDate < oldestIHMEdate){
