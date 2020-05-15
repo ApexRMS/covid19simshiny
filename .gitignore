@@ -1,5 +1,13 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
+# General
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
 
-/src/covid19canada/rsconnect/shinyapps.io/apexrms/covid19canada.dcf
+# Ignore IHME data
+src/IHME
+IHME-deaths-cumulative.csv
+IHME-deaths-daily.csv
+IHME-infected-daily.csv
+IHME-infected-cumulative.csv
