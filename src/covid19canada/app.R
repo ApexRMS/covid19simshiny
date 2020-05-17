@@ -177,8 +177,8 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                 
                 theme = shinythemes::shinytheme("flatly"),
                 
-                titlePanel(column(width = 12,
-                                  a(img(src = "SyncroSim-Logo.png"), href="https://syncrosim.com"))),
+                #titlePanel(column(width = 12,
+                #                  a(img(src = "SyncroSim-Logo.png"), href="https://syncrosim.com"))),
                 
                 br(),
                 
@@ -205,7 +205,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            p(strong("Select Models")),
                                            
-                                           span(class="mycheckbox", checkboxInput("ApexRMS", "ApexRMS  ", value=T)),
+                                           span(class="mycheckbox", checkboxInput("ApexRMS", " Apex    ", value=T)),
                                            
                                            actionButton(inputId='ApexRMSLink',
                                                         label="",
@@ -259,7 +259,9 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            hr(),
                                            
-                                           p(strong("Note that the simulation results presented here are simply a demonstration of the model framework, and should not be considered actual predictions for any of these jurisdictions."))),
+                                           p("Powered by ",
+                                             a("SyncroSim", 
+                                               href = "https://syncrosim.com/"))),
                               
                               mainPanel(width=9,
                                         
@@ -268,10 +270,10 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                         tabsetPanel(type = c("pills"),
                                                     tabPanel("Deaths",
                                                              fluidRow(column(12, align="center",
-                                                                             plotOutput("deathChart", width="100%", height="900px")))),
+                                                                             plotOutput("deathChart", width="100%", height="700px")))),
                                                     tabPanel("Infections",
                                                              fluidRow(column(12, align="center",
-                                                                             plotOutput("infectionChart", width="100%", height="900px"))))))))
+                                                                             plotOutput("infectionChart", width="100%", height="700px"))))))))
 
 #### Server ####
 server <- function(input, output) {
@@ -451,8 +453,8 @@ server <- function(input, output) {
     tagLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA) +
       geom_line(size=1) +
-      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS (95% Confidence Interval)', "IHME projection"='IHME (95% Confidence Interval)'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
-      scale_fill_manual(values=c("Observed"="#ffffff", "ApexRMS projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS (95% Confidence Interval)', "IHME projection"='IHME (95% Confidence Interval)'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
+      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
+      scale_fill_manual(values=c("Observed"="#ffffff", "ApexRMS projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
       whiteTheme +
       theme(legend.position = "top",
             legend.justification = "center",
