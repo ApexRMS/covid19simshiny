@@ -32,9 +32,6 @@ onStop(thematic_off)
 brewer.pal(n = 8, name = "Dark2")
 sourceLineColor <- c("Observed"="#7B7B7B", "Apex projection"="#7d1428", "IHME projection"="#7cb961")
 
-# Output files
-outputFiles <- list.files("data")
-
 # Load data
 data <- read.csv(file=paste0("data/", "data.csv")) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
