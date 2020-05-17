@@ -23,8 +23,10 @@ library(magrittr)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Data directories
-syncroSimDataDir = "C:/gitprojects/covid19sim/data"
-ihmeDataDir = "C:/gitprojects/covid19simshiny/src/IHME" # Local folder where the IHME data is located
+#syncroSimDataDir = "C:/gitprojects/covid19sim/data/"
+syncroSimDataDir = "E:/covid19sim/data/"
+#ihmeDataDir = "C:/gitprojects/covid19simshiny/src/IHME" # Local folder where the IHME data is located
+ihmeDataDir = "E:/covid19sandbox/src/IHME"
 
 #### SyncroSim data ####
 outputFiles <- list.files(syncroSimDataDir, pattern="model-output")
@@ -32,8 +34,30 @@ outputFiles <- list.files(syncroSimDataDir, pattern="model-output")
 # Confirm there are exactly 4 output files
 if(!length(outputFiles) == 4){stop(paste("There are", length(outputFiles), "output files, instead of 4"))}
 
-# Copy files to "shiny/covid19canada/data" folder
-file.copy(paste0(syncroSimDataDir,"/", outputFiles), paste0(getwd(),"/covid19canada/data/"), overwrite=T)
+# Format
+dailyDeaths <- read.csv(paste0(syncroSimDataDir, outputFiles[which(grepl("deaths-daily-model-output", outputFiles))])) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Daily Deaths") %>%
+  mutate(Source = "Apex") %>%
+  mutate(Jurisdiction = as.character(Jurisdiction))
+
+cumulativeDeaths <- read.csv(paste0(syncroSimDataDir, outputFiles[which(grepl("deaths-cumulative-model-output", outputFiles))])) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Cumulative Deaths") %>%
+  mutate(Source = "Apex") %>%
+  mutate(Jurisdiction = as.character(Jurisdiction))
+
+dailyInfected <- read.csv(paste0(syncroSimDataDir, outputFiles[which(grepl("infected-daily-model-output", outputFiles))])) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Daily Infections") %>%
+  mutate(Source = "Apex") %>%
+  mutate(Jurisdiction = as.character(Jurisdiction))
+
+cumulativeInfected <- read.csv(paste0(syncroSimDataDir, outputFiles[which(grepl("infected-cumulative-model-output", outputFiles))])) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Cumulative Infections") %>%
+  mutate(Source = "Apex") %>%
+  mutate(Jurisdiction = as.character(Jurisdiction))
 
 #### IHME data ####
 # Compile IHME data form all available dates
@@ -57,17 +81,17 @@ for(i in ihmeDates){
       mutate(location_name = as.character(location_name))
   }
   
-  if(!exists("allData")){
-    allData <- data
+  if(!exists("allData_IHME")){
+    allData_IHME <- data
   }else{
-    allData %<>% bind_rows(., data)
+    allData_IHME %<>% bind_rows(., data)
   }
 }
 rm(i, data)
 
 # Format output
-# Daily deaths
-dailyDeaths <- allData %>%
+      # Daily deaths
+dailyDeaths_IHME <- allData_IHME %>%
   select(location_name, date, deaths_mean, deaths_lower, deaths_upper, forecastDate) %>%
   rename(Jurisdiction = location_name,
          Date = date,
@@ -75,10 +99,16 @@ dailyDeaths <- allData %>%
          Lower = deaths_lower,
          Upper = deaths_upper,
          date_model_run = forecastDate) %>%
-  arrange(Jurisdiction, date_model_run, Date)
+  arrange(Jurisdiction, date_model_run, Date) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Daily Deaths") %>%
+  mutate(Source = "IHME") %>%
+  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
+  mutate(Jurisdiction = as.character(Jurisdiction))
 
-# Cumulative deaths
-cumulativeDeaths <- allData %>%
+      # Cumulative deaths
+cumulativeDeaths_IHME <- allData_IHME %>%
   select(location_name, date, totdea_mean, totdea_lower, totdea_upper, forecastDate) %>%
   rename(Jurisdiction = location_name,
          Date = date,
@@ -86,10 +116,16 @@ cumulativeDeaths <- allData %>%
          Lower = totdea_lower,
          Upper = totdea_upper,
          date_model_run = forecastDate) %>%
-  arrange(Jurisdiction, date_model_run, Date)
+  arrange(Jurisdiction, date_model_run, Date) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Cumulative Deaths") %>%
+  mutate(Source = "IHME") %>%
+  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
+  mutate(Jurisdiction = as.character(Jurisdiction))
 
-# Daily infected
-dailyInfected <- allData %>%
+      # Daily infected
+dailyInfected_IHME <- allData_IHME %>%
   select(location_name, date, est_infections_mean, est_infections_lower, est_infections_upper, forecastDate) %>%
   rename(Jurisdiction = location_name,
          Date = date,
@@ -98,23 +134,64 @@ dailyInfected <- allData %>%
          Upper = est_infections_upper,
          date_model_run = forecastDate) %>%
   filter(!is.na(Mean)) %>% # Remove NA rows
-  arrange(Jurisdiction, date_model_run, Date)
+  arrange(Jurisdiction, date_model_run, Date) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Daily Infections") %>%
+  mutate(Source = "IHME") %>%
+  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
+  mutate(Jurisdiction = as.character(Jurisdiction))
 
-# Cumulative infected
-cumulativeInfected <- dailyInfected %>%
+      # Cumulative infected
+cumulativeInfected_IHME <- dailyInfected_IHME %>%
   arrange(Date) %>%
   group_by(Jurisdiction, date_model_run) %>%
   mutate(Mean = cumsum(Mean),
          Lower = cumsum(Lower),
          Upper = cumsum(Upper)) %>%
   ungroup() %>%
-  arrange(Jurisdiction, date_model_run, Date)
+  arrange(Jurisdiction, date_model_run, Date) %>%
+  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+  mutate(Metric = "Cumulative Infections") %>%
+  mutate(Source = "IHME") %>%
+  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
+  mutate(Jurisdiction = as.character(Jurisdiction))
+
+#### Combine datasets ####
+# General
+data <- bind_rows(dailyDeaths, dailyInfected, cumulativeDeaths, cumulativeInfected, dailyDeaths_IHME, dailyInfected_IHME, cumulativeDeaths_IHME, cumulativeInfected_IHME) %>% # Bind data
+  mutate(DataType = ifelse((Metric %in% c("Daily Deaths", "Cumulative Deaths")) & (Date < date_model_run), "Observed", "Modeled")) %>%
+  mutate(Metric = ordered(Metric, levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths"))) %>%
+  filter(!(DataType == "Observed" & Source == "IHME")) # Remove IHME observations
+
+# Duplicate last observed date to make it also the first modeled date
+firstModeledApex <- data %>%
+  filter(DataType == "Observed") %>% # Keep only observations
+  filter(Date == date_model_run - 1) %>% # Keep only data for the day before a model run
+  mutate(DataType = "Modeled") %>% # Assign it as modeled data
+  mutate(Lower = Mean, Upper = Mean) # Assign lower and upper bounds = mean
+
+firstModeledIHME <- firstModeledApex %>%
+  mutate(Source = "IHME") %>%
+  filter(date_model_run %in% dailyDeaths_IHME$date_model_run) # Only retain date_model_run that exist in the IHME dataset
+
+# Add to master dataset
+data %<>% bind_rows(., firstModeledApex, firstModeledIHME) %>%
+  arrange(Metric, Jurisdiction, date_model_run, Date, Source) %>%
+  mutate(DataTag = ifelse(DataType == "Observed", "Observed", ifelse(Source == "Apex", "Apex projection", "IHME projection"))) %>%
+  mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed")))
+
+# Filter out unecessary rows
+obsDate <- data %>% # date_model_run to use for Observation data
+  filter(Source == "Apex") %>%
+  pull(date_model_run) %>%
+  max()
+
+data %<>% filter(!((DataType == "Observed") & (!date_model_run == obsDate))) # Remove observations for all but the most recent model
 
 # Save
-write.csv(dailyDeaths, file=paste0(getwd(),"/covid19canada/data/", "IHME-deaths-daily.csv"), row.names = F)
-write.csv(cumulativeDeaths, file=paste0(getwd(),"/covid19canada/data/", "IHME-deaths-cumulative.csv"), row.names = F)
-write.csv(dailyInfected, file=paste0(getwd(),"/covid19canada/data/", "IHME-infected-daily.csv"), row.names = F)
-write.csv(cumulativeInfected, file=paste0(getwd(),"/covid19canada/data/", "IHME-infected-cumulative.csv"), row.names = F)
+write.csv(data, file=paste0(getwd(),"/covid19canada/data/", "data.csv"), row.names = F)
 
 #### Deploy the app ####
 library(rsconnect)

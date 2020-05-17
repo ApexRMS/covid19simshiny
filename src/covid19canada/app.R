@@ -36,86 +36,9 @@ sourceLineColor <- c("Observed"="#7B7B7B", "Apex projection"="#7d1428", "IHME pr
 outputFiles <- list.files("data")
 
 # Load data
-# Apex data
-dailyDeaths <- read.csv(paste0("data/", outputFiles[which(grepl("deaths-daily-model-output", outputFiles))])) %>%
+data <- read.csv(file=paste0("data/", "data.csv")) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Daily Deaths") %>%
-  mutate(Source = "Apex") %>%
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-cumulativeDeaths <- read.csv(paste0("data/", outputFiles[which(grepl("deaths-cumulative-model-output", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Cumulative Deaths") %>%
-  mutate(Source = "Apex") %>%
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-dailyInfected <- read.csv(paste0("data/", outputFiles[which(grepl("infected-daily-model-output", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Daily Infections") %>%
-  mutate(Source = "Apex") %>%
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-cumulativeInfected <- read.csv(paste0("data/", outputFiles[which(grepl("infected-cumulative-model-output", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Cumulative Infections") %>%
-  mutate(Source = "Apex") %>%
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-# IHME data
-dailyDeaths_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-deaths-daily", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Daily Deaths") %>%
-  mutate(Source = "IHME") %>%
-  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-cumulativeDeaths_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-deaths-cumulative", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Cumulative Deaths") %>%
-  mutate(Source = "IHME") %>%
-  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-dailyInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-infected-daily", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Daily Infections") %>%
-  mutate(Source = "IHME") %>%
-  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-cumulativeInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-infected-cumulative", outputFiles))])) %>%
-  mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
-  mutate(Metric = "Cumulative Infections") %>%
-  mutate(Source = "IHME") %>%
-  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
-  mutate(Jurisdiction = as.character(Jurisdiction))
-
-# Format data
-# General
-data <- bind_rows(dailyDeaths, dailyInfected, cumulativeDeaths, cumulativeInfected, dailyDeaths_IHME, dailyInfected_IHME, cumulativeDeaths_IHME, cumulativeInfected_IHME) %>% # Bind data
-  mutate(DataType = ifelse((Metric %in% c("Daily Deaths", "Cumulative Deaths")) & (Date < date_model_run), "Observed", "Modeled")) %>%
   mutate(Metric = ordered(Metric, levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths"))) %>%
-  filter(!(DataType == "Observed" & Source == "IHME")) # Remove IHME observations
-
-# Duplicate last observed date to make it also the first modeled date
-firstModeledApex <- data %>%
-  filter(DataType == "Observed") %>% # Keep only observations
-  filter(Date == date_model_run - 1) %>% # Keep only data for the day before a model run
-  mutate(DataType = "Modeled") %>% # Assign it as modeled data
-  mutate(Lower = Mean, Upper = Mean) # Assign lower and upper bounds = mean
-
-firstModeledIHME <- firstModeledApex %>%
-  mutate(Source = "IHME") %>%
-  filter(date_model_run %in% dailyDeaths_IHME$date_model_run) # Only retain date_model_run that exist in the IHME dataset
-
-# Add to master dataset
-data %<>% bind_rows(., firstModeledApex, firstModeledIHME) %>%
-  arrange(Metric, Jurisdiction, date_model_run, Date, Source) %>%
-  mutate(DataTag = ifelse(DataType == "Observed", "Observed", ifelse(Source == "Apex", "Apex projection", "IHME projection"))) %>%
   mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed")))
 
 #### Helpers ####
@@ -125,10 +48,17 @@ defaultForecastDate <- max(data$date_model_run[which(data$Source == "Apex")])
 
 jurisdictions <- sort(unique(data$Jurisdiction))
 
-obsDate <- data %>% # date_model_run to use for Observation data
-  filter(Source == "Apex") %>%
+oldestIHMEdate_Deaths <- data %>%
+  filter(Source == "IHME") %>%
+  filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>%
   pull(date_model_run) %>%
-  max()
+  min()
+
+oldestIHMEdate_Infections <- data %>%
+  filter(Source == "IHME") %>%
+  filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>%
+  pull(date_model_run) %>%
+  min()
 
 minDate <- min(data$Date[which(data$Source == "Apex")])
 maxDate <- max(data$Date[which(data$Source == "Apex")])
@@ -291,17 +221,9 @@ server <- function(input, output) {
       pull(date_model_run) %>%
       max()
     
-    # Get oldest IHME model date
-    oldestIHMEdate <- data %>%
-      filter(Source == "IHME") %>%
-      filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>%
-      pull(date_model_run) %>%
-      min()
-    
     # Subset data based on user inputs
     dataSubset <- data %>% filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>% # Deaths only
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdiction of interest
-      filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
       filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
       filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
@@ -326,7 +248,7 @@ server <- function(input, output) {
     if("IHME" %in% models){
       
       # If there is no earlier IHME model
-      if(input$forecastDate < oldestIHMEdate){
+      if(input$forecastDate < oldestIHMEdate_Deaths){
         notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
@@ -336,7 +258,7 @@ server <- function(input, output) {
                     hjust=0,
                     vjust=1,
                     size=5,
-                    label = paste0("No IHME projection available prior to ", oldestIHMEdate, "."))
+                    label = paste0("No IHME projection available prior to ", oldestIHMEdate_Deaths, "."))
         
         # If there is an earlier IHME model        
       }else if(!lastIHMEdate == input$forecastDate){
@@ -387,17 +309,9 @@ server <- function(input, output) {
       pull(date_model_run) %>%
       max()
     
-    # Get oldest IHME model date
-    oldestIHMEdate <- data %>%
-      filter(Source == "IHME") %>%
-      filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>%
-      pull(date_model_run) %>%
-      min()
-    
     # Subset data based on user inputs
     dataSubset <- data %>% filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>% # Deaths only
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdiction of interest
-      filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
       filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
       filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
@@ -422,7 +336,7 @@ server <- function(input, output) {
     if("IHME" %in% models){
       
       # If there is no earlier IHME model
-      if(input$forecastDate < oldestIHMEdate){
+      if(input$forecastDate < oldestIHMEdate_Infections){
         notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
@@ -432,7 +346,7 @@ server <- function(input, output) {
                     hjust=0,
                     vjust=1,
                     size=5,
-                    label = paste0("No IHME projection available prior to ", oldestIHMEdate, "."))
+                    label = paste0("No IHME projection available prior to ", oldestIHMEdate_Infections, "."))
         
         # If there is an earlier IHME model        
       }else if(!lastIHMEdate == input$forecastDate){
