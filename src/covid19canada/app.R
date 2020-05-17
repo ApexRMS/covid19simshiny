@@ -30,35 +30,35 @@ onStop(thematic_off)
 
 # Input parameters
 brewer.pal(n = 8, name = "Dark2")
-sourceLineColor <- c("Observed"="#7B7B7B", "ApexRMS projection"="#7d1428", "IHME projection"="#7cb961")
+sourceLineColor <- c("Observed"="#7B7B7B", "Apex projection"="#7d1428", "IHME projection"="#7cb961")
 
 # Output files
 outputFiles <- list.files("data")
 
 # Load data
-# ApexRMS data
+# Apex data
 dailyDeaths <- read.csv(paste0("data/", outputFiles[which(grepl("deaths-daily-model-output", outputFiles))])) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = "Daily Deaths") %>%
-  mutate(Source = "ApexRMS") %>%
+  mutate(Source = "Apex") %>%
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 cumulativeDeaths <- read.csv(paste0("data/", outputFiles[which(grepl("deaths-cumulative-model-output", outputFiles))])) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = "Cumulative Deaths") %>%
-  mutate(Source = "ApexRMS") %>%
+  mutate(Source = "Apex") %>%
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 dailyInfected <- read.csv(paste0("data/", outputFiles[which(grepl("infected-daily-model-output", outputFiles))])) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = "Daily Infections") %>%
-  mutate(Source = "ApexRMS") %>%
+  mutate(Source = "Apex") %>%
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 cumulativeInfected <- read.csv(paste0("data/", outputFiles[which(grepl("infected-cumulative-model-output", outputFiles))])) %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = "Cumulative Infections") %>%
-  mutate(Source = "ApexRMS") %>%
+  mutate(Source = "Apex") %>%
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 # IHME data
@@ -67,7 +67,7 @@ dailyDeaths_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-death
   mutate(Metric = "Daily Deaths") %>%
   mutate(Source = "IHME") %>%
   mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the ApexRMS datasets
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 cumulativeDeaths_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-deaths-cumulative", outputFiles))])) %>%
@@ -75,7 +75,7 @@ cumulativeDeaths_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-
   mutate(Metric = "Cumulative Deaths") %>%
   mutate(Source = "IHME") %>%
   mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the ApexRMS datasets
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 dailyInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-infected-daily", outputFiles))])) %>%
@@ -83,7 +83,7 @@ dailyInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-inf
   mutate(Metric = "Daily Infections") %>%
   mutate(Source = "IHME") %>%
   mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the ApexRMS datasets
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 cumulativeInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHME-infected-cumulative", outputFiles))])) %>%
@@ -91,7 +91,7 @@ cumulativeInfected_IHME <- read.csv(paste0("data/", outputFiles[which(grepl("IHM
   mutate(Metric = "Cumulative Infections") %>%
   mutate(Source = "IHME") %>%
   mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
-  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the ApexRMS datasets
+  filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
   mutate(Jurisdiction = as.character(Jurisdiction))
 
 # Format data
@@ -102,36 +102,36 @@ data <- bind_rows(dailyDeaths, dailyInfected, cumulativeDeaths, cumulativeInfect
   filter(!(DataType == "Observed" & Source == "IHME")) # Remove IHME observations
 
 # Duplicate last observed date to make it also the first modeled date
-firstModeledApexRMS <- data %>%
+firstModeledApex <- data %>%
   filter(DataType == "Observed") %>% # Keep only observations
   filter(Date == date_model_run - 1) %>% # Keep only data for the day before a model run
   mutate(DataType = "Modeled") %>% # Assign it as modeled data
   mutate(Lower = Mean, Upper = Mean) # Assign lower and upper bounds = mean
 
-firstModeledIHME <- firstModeledApexRMS %>%
+firstModeledIHME <- firstModeledApex %>%
   mutate(Source = "IHME") %>%
   filter(date_model_run %in% dailyDeaths_IHME$date_model_run) # Only retain date_model_run that exist in the IHME dataset
 
 # Add to master dataset
-data %<>% bind_rows(., firstModeledApexRMS, firstModeledIHME) %>%
+data %<>% bind_rows(., firstModeledApex, firstModeledIHME) %>%
   arrange(Metric, Jurisdiction, date_model_run, Date, Source) %>%
-  mutate(DataTag = ifelse(DataType == "Observed", "Observed", ifelse(Source == "ApexRMS", "ApexRMS projection", "IHME projection"))) %>%
-  mutate(DataTag = ordered(DataTag, level=c("IHME projection", "ApexRMS projection", "Observed")))
+  mutate(DataTag = ifelse(DataType == "Observed", "Observed", ifelse(Source == "Apex", "Apex projection", "IHME projection"))) %>%
+  mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed")))
 
 #### Helpers ####
 forecastDates <- sort(unique(data$date_model_run))
 
-defaultForecastDate <- max(data$date_model_run[which(data$Source == "ApexRMS")])
+defaultForecastDate <- max(data$date_model_run[which(data$Source == "Apex")])
 
 jurisdictions <- sort(unique(data$Jurisdiction))
 
 obsDate <- data %>% # date_model_run to use for Observation data
-  filter(Source == "ApexRMS") %>%
+  filter(Source == "Apex") %>%
   pull(date_model_run) %>%
   max()
 
-minDate <- min(data$Date[which(data$Source == "ApexRMS")])
-maxDate <- max(data$Date[which(data$Source == "ApexRMS")])
+minDate <- min(data$Date[which(data$Source == "Apex")])
+maxDate <- max(data$Date[which(data$Source == "Apex")])
 
 whiteTheme <- theme(panel.background = element_rect(fill = "#f9f9f9"),
                     panel.border = element_rect(fill = NA, color = "grey75"),
@@ -205,9 +205,9 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            p(strong("Select Models")),
                                            
-                                           span(class="mycheckbox", checkboxInput("ApexRMS", " Apex    ", value=T)),
+                                           span(class="mycheckbox", checkboxInput("Apex", " Apex    ", value=T)),
                                            
-                                           actionButton(inputId='ApexRMSLink',
+                                           actionButton(inputId='ApexLink',
                                                         label="",
                                                         icon = icon("info-circle"),
                                                         onclick ="window.open('http://www.apexrms.com/covid19/', '_blank')",
@@ -237,7 +237,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            bsTooltip("models", "Select one or more models to plot", placement="right"),
                                            
-                                           bsTooltip("ApexRMSLink", "ApexRMS model details", placement="right"),
+                                           bsTooltip("ApexLink", "Apex model details", placement="right"),
                                            
                                            bsTooltip("IHMELink", "IHME model details", placement="right"),
                                            
@@ -281,8 +281,8 @@ server <- function(input, output) {
   output$deathChart <- renderPlot({
     
     # Get selected models
-    models <- c("ApexRMS", "IHME")
-    models <- models[c(input$ApexRMS, input$IHME)]
+    models <- c("Apex", "IHME")
+    models <- models[c(input$Apex, input$IHME)]
     
     # Get most recent IHME model date
     lastIHMEdate <- data %>%
@@ -302,7 +302,7 @@ server <- function(input, output) {
     dataSubset <- data %>% filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>% # Deaths only
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdiction of interest
       filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
-      filter(!((DataTag == "ApexRMS projection") & (!date_model_run == input$forecastDate))) %>% # Remove ApexRMS predictions for all but the model run of interest
+      filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
       filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
@@ -357,8 +357,8 @@ server <- function(input, output) {
     tagLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA) +
       geom_line(size=1) +
-      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
-      scale_fill_manual(values=c("Observed"="#ffffff", "ApexRMS projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
+      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "Apex projection"='Apex', "IHME projection"='IHME'), breaks = c("Observed", "Apex projection", "IHME projection")) +
+      scale_fill_manual(values=c("Observed"="#ffffff", "Apex projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "Apex projection"='Apex', "IHME projection"='IHME'), breaks = c("Observed", "Apex projection", "IHME projection")) +
       whiteTheme +
       theme(legend.position = "top",
             legend.justification = "center",
@@ -374,8 +374,8 @@ server <- function(input, output) {
   
   output$infectionChart <- renderPlot({
     # Get selected models
-    models <- c("ApexRMS", "IHME")
-    models <- models[c(input$ApexRMS, input$IHME)]
+    models <- c("Apex", "IHME")
+    models <- models[c(input$Apex, input$IHME)]
     
     # Check that at least one model was selected
     validate(need(models, 'Select at least one model.'))
@@ -398,7 +398,7 @@ server <- function(input, output) {
     dataSubset <- data %>% filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>% # Deaths only
       filter(Jurisdiction %in% input$juris) %>% # Only keep jurisdiction of interest
       filter(!((DataType == "Observed") & (!date_model_run == obsDate))) %>% # Remove observations for all but the most recent model
-      filter(!((DataTag == "ApexRMS projection") & (!date_model_run == input$forecastDate))) %>% # Remove ApexRMS predictions for all but the model run of interest
+      filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
       filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
@@ -453,8 +453,8 @@ server <- function(input, output) {
     tagLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA) +
       geom_line(size=1) +
-      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
-      scale_fill_manual(values=c("Observed"="#ffffff", "ApexRMS projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "ApexRMS projection"='ApexRMS', "IHME projection"='IHME'), breaks = c("Observed", "ApexRMS projection", "IHME projection")) +
+      scale_color_manual(values=sourceLineColor, labels=c("Observed"="Observed", "Apex projection"='Apex', "IHME projection"='IHME'), breaks = c("Observed", "Apex projection", "IHME projection")) +
+      scale_fill_manual(values=c("Observed"="#ffffff", "Apex projection"="#7d1428", "IHME projection"="#7cb961"), labels=c("Observed"="Observed", "Apex projection"='Apex', "IHME projection"='IHME'), breaks = c("Observed", "Apex projection", "IHME projection")) +
       whiteTheme +
       theme(legend.position = "top",
             legend.justification = "center",
