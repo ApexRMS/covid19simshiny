@@ -245,7 +245,7 @@ server <- function(input, output) {
     if("IHME" %in% models){
       
       # If there is no IHME model for the jurisdiction
-      if(!"IHME" %in% dataSubset$Source){
+      if(!input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')]){
         notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
@@ -327,7 +327,8 @@ server <- function(input, output) {
     
     # Check that at least one available model was selected
     validate(need(models, 'Select at least one model.'))
-    validate(need(!(models=="IHME" && !"IHME" %in% dataSubset$Source), 'No IHME projection available for this jurisdiction.\nPlease select a different jurisdiction and/or a different model.'))
+    validate(need(!(models=="IHME" && !input$juris %in% data$Jurisdiction[which(data$Source == "IHME")]), 'No IHME projection available for the selected jurisdiction.\nPlease select a different jurisdiction and/or a different model.'))
+    validate(need(!(models=="IHME" && input$forecastDate < oldestIHMEdate_Infections), paste('No IHME projection available prior to', oldestIHMEdate_Infections, 'for infections.\nPlease select a different forecast date and/or a different model.')))
     
     # Produce main plot (without legend)
     plot <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
@@ -347,7 +348,7 @@ server <- function(input, output) {
     if("IHME" %in% models){
       
       # If there is no IHME model for the jurisdiction
-      if(!"IHME" %in% dataSubset$Source){
+      if(!input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')]){
         notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
