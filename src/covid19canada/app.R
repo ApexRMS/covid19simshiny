@@ -132,7 +132,7 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            p(strong("Select Models")),
                                            
-                                           span(class="mycheckbox", checkboxInput("Apex", " Apex    ", value=T)),
+                                           span(class="mycheckbox", checkboxInput("Apex", "Apex  - ", value=T)),
                                            
                                            actionButton(inputId='ApexLink',
                                                         label="",
@@ -146,9 +146,9 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                                                         border-radius: 20%;
                                                                         border-width: 0px"),
                                            
-                                           br(),
+                                           br(),br(),
                                            
-                                           span(class="mycheckbox", checkboxInput("IHME", "IHME  ", value=T)),
+                                           span(class="mycheckbox", checkboxInput("IHME", "IHME - ", value=F)),
                                            
                                            actionButton(inputId='IHMELink',
                                                         label="",
