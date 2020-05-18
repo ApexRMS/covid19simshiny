@@ -23,10 +23,10 @@ library(magrittr)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Data directories
-#syncroSimDataDir = "C:/gitprojects/covid19sim/data/"
-syncroSimDataDir = "E:/covid19sim/data/"
-#ihmeDataDir = "C:/gitprojects/covid19simshiny/src/IHME" # Local folder where the IHME data is located
-ihmeDataDir = "E:/covid19sandbox/src/IHME"
+syncroSimDataDir = "C:/gitprojects/covid19sim/data/"
+#syncroSimDataDir = "E:/covid19sim/data/"
+ihmeDataDir = "C:/gitprojects/covid19simshiny/src/IHME" # Local folder where the IHME data is located
+#ihmeDataDir = "E:/covid19sandbox/src/IHME"
 
 #### SyncroSim data ####
 outputFiles <- list.files(syncroSimDataDir, pattern="model-output")
