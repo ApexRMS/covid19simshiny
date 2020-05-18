@@ -154,7 +154,6 @@ cumulativeInfected_IHME <- dailyInfected_IHME %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = "Cumulative Infections") %>%
   mutate(Source = "IHME") %>%
-  mutate(Jurisdiction = ifelse(Jurisdiction == "Canada", "Canada", paste0("Canada - ", Jurisdiction))) %>% # Standardize jurisdiction name
   filter(Jurisdiction %in% dailyDeaths$Jurisdiction) %>% # Only retain jurisdictions that are in the Apex datasets
   mutate(Jurisdiction = as.character(Jurisdiction))
 
@@ -174,6 +173,7 @@ firstModeledApex <- data %>%
 
 firstModeledIHME <- firstModeledApex %>%
   mutate(Source = "IHME") %>%
+  filter(Jurisdiction %in% c(dailyDeaths_IHME$Jurisdiction, cumulativeDeaths_IHME$Jurisdiction, dailyInfected_IHME$Jurisdiction, cumulativeInfected_IHME$Jurisdiction)) %>%
   filter(date_model_run %in% dailyDeaths_IHME$date_model_run) # Only retain date_model_run that exist in the IHME dataset
 
 # Add to master dataset

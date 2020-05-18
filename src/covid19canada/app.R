@@ -244,9 +244,22 @@ server <- function(input, output) {
     # Add error message if IHME data is missing
     if("IHME" %in% models){
       
-      # If there is no earlier IHME model
-      if(input$forecastDate < oldestIHMEdate_Deaths){
-        notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
+      # If there is no IHME model for the jurisdiction
+      if(!"IHME" %in% dataSubset$Source){
+        notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
+        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
+        plot <- plot +
+          geom_text(data = notes,
+                    aes(x=x, y=y),
+                    color="#7B7B7B",
+                    hjust=0,
+                    vjust=1,
+                    size=5,
+                    label = paste0("No IHME projection available \nfor the selected jurisdiction."))
+      
+      # If there is no earlier IHME model for the jurisdiction
+      }else if(input$forecastDate < oldestIHMEdate_Deaths){
+        notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
           geom_text(data = notes,
@@ -257,9 +270,9 @@ server <- function(input, output) {
                     size=5,
                     label = paste0("No IHME projection available prior to ", oldestIHMEdate_Deaths, "."))
         
-        # If there is an earlier IHME model        
+        # If there is an earlier IHME model for the jurisdiction     
       }else if(!lastIHMEdate == input$forecastDate){
-        notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
+        notes <- data.frame(Metric = ordered(c("Daily Deaths", "Cumulative Deaths"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
           geom_text(data = notes,
@@ -296,9 +309,6 @@ server <- function(input, output) {
     models <- c("Apex", "IHME")
     models <- models[c(input$Apex, input$IHME)]
     
-    # Check that at least one model was selected
-    validate(need(models, 'Select at least one model.'))
-    
     # Get most recent IHME model date
     lastIHMEdate <- data %>%
       filter(Source == "IHME") %>%
@@ -314,6 +324,10 @@ server <- function(input, output) {
       filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
+    
+    # Check that at least one available model was selected
+    validate(need(models, 'Select at least one model.'))
+    validate(need(!(models=="IHME" && !"IHME" %in% dataSubset$Source), 'No IHME projection available for this jurisdiction.\nPlease select a different jurisdiction and/or a different model.'))
     
     # Produce main plot (without legend)
     plot <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
@@ -332,9 +346,22 @@ server <- function(input, output) {
     # Add error message if IHME data is missing
     if("IHME" %in% models){
       
-      # If there is no earlier IHME model
-      if(input$forecastDate < oldestIHMEdate_Infections){
-        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
+      # If there is no IHME model for the jurisdiction
+      if(!"IHME" %in% dataSubset$Source){
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
+        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
+        plot <- plot +
+          geom_text(data = notes,
+                    aes(x=x, y=y),
+                    color="#7B7B7B",
+                    hjust=0,
+                    vjust=1,
+                    size=5,
+                    label = paste0("No IHME projection available \nfor the selected jurisdiction."))
+        
+        # If there is no earlier IHME model for the jurisdiction
+      }else if(input$forecastDate < oldestIHMEdate_Infections){
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
           geom_text(data = notes,
@@ -345,9 +372,9 @@ server <- function(input, output) {
                     size=5,
                     label = paste0("No IHME projection available prior to ", oldestIHMEdate_Infections, "."))
         
-        # If there is an earlier IHME model        
+        # If there is an earlier IHME model for the jurisdiction        
       }else if(!lastIHMEdate == input$forecastDate){
-        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = input$range[1])
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
         notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
         plot <- plot +
           geom_text(data = notes,
