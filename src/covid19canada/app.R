@@ -186,10 +186,17 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            hr(),
                                            
+                                           downloadButton("downloadData", 
+                                                          "Download Data", 
+                                                          style = "color: white;
+                                                          background-color: SteelBlue"),
+                                           br(),br(),
+                                           
                                            p("Powered by ",
                                              a("SyncroSim", 
                                                href = "https://syncrosim.com/"))),
-                              
+                                           
+                                           
                               mainPanel(width=9,
                                         
                                         titlePanel(h2("COVID-19 Forecasts For Canada", align="center")),
@@ -406,6 +413,16 @@ server <- function(input, output) {
     p <- plot_grid(tagLegend, plot, ncol=1, rel_heights = c(1,30))
     return(p)
   })
+  
+  output$downloadData <- downloadHandler(
+    
+    filename = function() {
+      paste("covid-19-forecast-data", ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(data, file, row.names = FALSE)
+    }
+  )
 }
 
 #### Run Shiny app ####
