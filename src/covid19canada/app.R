@@ -178,9 +178,10 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                            
                                            bsTooltip("logY", "Plot data on a log scale", placement="right"),
                                            
-                                           sliderInput("range", width="100%", label = "Date Range",
-                                                       min = minDate, max = maxDate, value = c(minDate, maxDate), 
-                                                       step = 1),
+                                           dateRangeInput("range", width="100%", label = "Date Range",
+                                                       start = "2020-03-15", end = maxDate, 
+                                                       min = minDate, max = maxDate,
+                                                       format = "M d"),
                                            
                                            bsTooltip("range", "Select a range of dates to plot forecasts", placement="right"),
                                            
