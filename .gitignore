@@ -7,6 +7,7 @@
 
 # Ignore IHME data
 src/IHME
+src/covid19canada/data
 IHME-deaths-cumulative.csv
 IHME-deaths-daily.csv
 IHME-infected-daily.csv
