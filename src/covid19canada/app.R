@@ -249,6 +249,9 @@ server <- function(input, output) {
       filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
     
+    # Validate
+    validate(need(!(((nrow(dataSubset) == 0) || (length(unique(dataSubset$Date)) == 1))), paste0('No data available for the selected date range. \n Please widen the range of dates considered.')))
+    
     # Produce legend for data tags
     tagLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
       geom_ribbon(aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA) +
@@ -297,6 +300,9 @@ server <- function(input, output) {
       arrange(Metric, Jurisdiction, Date)
     
     dataSubset <- dataSubset[,colSums(is.na(dataSubset))<nrow(dataSubset)]
+    
+    # Validate
+    validate(need(!(((nrow(dataSubset) == 0) || (length(unique(dataSubset$Date)) == 1))), paste0('')))
     
     # Produce main plot (without legend)
     plot <- ggplot(dataSubset, aes(x=Date, y=Mean)) + 
@@ -493,7 +499,19 @@ server <- function(input, output) {
       if(!"Modeled" %in% dataSubset$DataType){
         plot %<>% style(hoverinfo = "none", traces = c(3,4))
         
-        # If there is modeled data
+      # If there is only modeled data
+      }else if(!"Observed" %in% dataSubset$DataType){
+        
+        # If there is one type of modeled data
+        if(length(unique(dataSubset$DataTag[which(!dataSubset$DataType == 'Observed')])) == 1){
+          plot %<>% style(hoverinfo = "none", traces = c(5,6))
+          
+        # If there are two types of modeled data
+        }else{
+          plot %<>% style(hoverinfo = "none", traces = c(9,10))
+          
+        }
+      # If there is observed and modeled data
       }else{
         
         # If there is one type of modeled data
@@ -534,14 +552,18 @@ server <- function(input, output) {
     
     dataSubset %<>% filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
       filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
-      filter(!((DataType == "Modeled") & (!Source %in% models))) %>% # Only keep models of interest
-      filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
+      filter(!((DataType == "Modeled") & (!Source %in% models))) # Only keep models of interest
+    
+    dataSubset_allDates <- dataSubset
+    
+    dataSubset %<>% filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
     
-    # Check that at least one available model was selected
+    # Validate
     validate(need(models, 'Select at least one model.'))
-    validate(need(!((nrow(dataSubset) == 0) && (input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')])), paste0(' \nNo projection available for the selected forecast date, jurisdiction, and model combination. Please select different input parameters.\n \nApex projections for the selected jurisdiction are available starting ', oldestApexdate_juris, '.\n IHME infection projections for the selected jurisdiction are available starting ', oldestIHMEdate_Infections, '.')))
-    validate(need(!(nrow(dataSubset) == 0), paste0(' \nNo projection available for the selected forecast date, jurisdiction, and model combination. Please select different input parameters.\n \nApex projections for the selected jurisdiction are available starting ', oldestApexdate_juris, '.\n The IHME does not model the selected jurisdiction.')))
+    validate(need(!((nrow(dataSubset_allDates) == 0) && (input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')])), paste0(' \nNo projection available for the selected forecast date, jurisdiction, and model combination. Please select different input parameters.\n \nApex projections for the selected jurisdiction are available starting ', oldestApexdate_juris, '.\n IHME infection projections for the selected jurisdiction are available starting ', oldestIHMEdate_Infections, '.')))
+    validate(need(!(nrow(dataSubset_allDates) == 0), paste0(' \nNo projection available for the selected forecast date, jurisdiction, and model combination. Please select different input parameters.\n \nApex projections for the selected jurisdiction are available starting ', oldestApexdate_juris, '.\n The IHME does not model the selected jurisdiction.')))
+    validate(need(!(((nrow(dataSubset) == 0) || (length(unique(dataSubset$Date)) == 1))), paste0('No data available for the selected date range. \n Please widen the range of dates considered.')))
     validate(need(!(models=="IHME" && !input$juris %in% data$Jurisdiction[which(data$Source == "IHME")]), 'No IHME projection available for the selected jurisdiction.\nPlease select a different jurisdiction and/or a different model.'))
     validate(need(!(models=="IHME" && input$forecastDate < oldestIHMEdate_Infections), paste('No IHME projection available prior to', oldestIHMEdate_Infections, 'for infections.\nPlease select a different forecast date and/or a different model.')))
     
