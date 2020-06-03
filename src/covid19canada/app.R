@@ -221,13 +221,13 @@ ui <- fluidPage(title = "COVID-19 SyncroSim",
                                                                              plotlyOutput("deathChart", width="100%", height="650px")))),
                                                     tabPanel("Infections",
                                                              fluidRow(column(12, align="center",
-                                                                             plotOutput("infectionChart", width="100%", height="700px"))))))))
+                                                                             plotOutput("infectionLegend", width="100%", height="40px"),
+                                                                             plotlyOutput("infectionChart", width="100%", height="650px"))))))))
 
 #### Server ####
 server <- function(input, output) {
   
   output$deathLegend <- renderPlot({
-    text <- F
     
     # Get selected models
     models <- c("Apex", "IHME")
@@ -309,6 +309,7 @@ server <- function(input, output) {
       geom_line(aes(color=DataTag)) +
       scale_color_manual(values=sourceLineColor) +
       scale_fill_manual(values=sourceLineColor) +
+      scale_y_continuous(name="") +
       guides(color=F, linetype=F) +
       whiteTheme +
       facet_wrap(vars(Metric), scales="free_y", ncol=1) +
@@ -317,15 +318,6 @@ server <- function(input, output) {
             strip.text = element_text(size=14, vjust = 0.5, margin = margin(0.1,0,0.1,0,"cm")),
             legend.position='none',
             panel.spacing = unit(0, "lines"))
-    
-    # # If logY = T
-    # if(input$logY){
-    #   plot <- plot +
-    #     scale_y_continuous(name="", labels=scales::label_comma(), trans=scales::trans_new("myTrans", myTrans, inv.myTrans))
-    # }else{
-    plot <- plot +
-      scale_y_continuous(name="")
-    # }
     
     # Add geom_ribbon if there is modeled data
     if("Modeled" %in% dataSubset$DataType){
@@ -530,7 +522,8 @@ server <- function(input, output) {
     plot
   })
   
-  output$infectionChart <- renderPlot({
+  output$infectionLegend <- renderPlot({
+    
     # Get selected models
     models <- c("Apex", "IHME")
     models <- models[c(input$Apex, input$IHME)]
@@ -560,6 +553,8 @@ server <- function(input, output) {
     dataSubset %<>% filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
       arrange(Metric, Jurisdiction, Date)
     
+    dataSubset <- dataSubset[,colSums(is.na(dataSubset))<nrow(dataSubset)]
+    
     # Validate
     validate(need(models, 'Select at least one model.'))
     validate(need(!((nrow(dataSubset_allDates) == 0) && (input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')])), paste0(' \nNo projection available for the selected forecast date, jurisdiction, and model combination. Please select different input parameters.\n \nApex projections for the selected jurisdiction are available starting ', oldestApexdate_juris, '.\n IHME infection projections for the selected jurisdiction are available starting ', oldestIHMEdate_Infections, '.')))
@@ -567,67 +562,6 @@ server <- function(input, output) {
     validate(need(!(((nrow(dataSubset) == 0) || (length(unique(dataSubset$Date)) == 1))), paste0('No data available for the selected date range. \n Please widen the range of dates considered.')))
     validate(need(!(models=="IHME" && !input$juris %in% data$Jurisdiction[which(data$Source == "IHME")]), 'No IHME projection available for the selected jurisdiction.\nPlease select a different jurisdiction and/or a different model.'))
     validate(need(!(models=="IHME" && input$forecastDate < oldestIHMEdate_Infections), paste('No IHME projection available prior to', oldestIHMEdate_Infections, 'for infections.\nPlease select a different forecast date and/or a different model.')))
-    
-    # Produce main plot (without legend)
-    plot <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
-      geom_line(size=1) +
-      geom_ribbon(data=dataSubset[which(dataSubset$DataType=="Modeled"),], aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA, show.legend=F) +
-      scale_color_manual(values=sourceLineColor) +
-      scale_fill_manual(values=sourceLineColor) +
-      guides(color=F, linetype=F) +
-      scale_y_continuous(name="Number of people", labels=scales::label_comma()) +
-      whiteTheme +
-      facet_wrap(vars(Metric), scales="free_y", ncol=1) +
-      theme(axis.title.x = element_blank(),
-            plot.margin=unit(c(5,5,10,5),"pt"),
-            strip.text = element_text(size=16))
-    
-    # Add error message if IHME data is missing
-    if("IHME" %in% models){
-      
-      # If there is no IHME model for the jurisdiction
-      if(!input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')]){
-        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
-        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
-        plot <- plot +
-          geom_text(data = notes,
-                    aes(x=x, y=y),
-                    color="#7B7B7B",
-                    hjust=0,
-                    vjust=1,
-                    size=5,
-                    label = paste0("No IHME projection available \nfor the selected jurisdiction."))
-        text <- T
-        
-        # If there is no earlier IHME model for the jurisdiction
-      }else if(input$forecastDate < oldestIHMEdate_Infections){
-        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
-        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
-        plot <- plot +
-          geom_text(data = notes,
-                    aes(x=x, y=y),
-                    color="#7B7B7B",
-                    hjust=0,
-                    vjust=1,
-                    size=5,
-                    label = paste0("No IHME projection available prior to ", oldestIHMEdate_Infections, "."))
-        text <- T
-        
-        # If there is an earlier IHME model for the jurisdiction        
-      }else if(!lastIHMEdate == input$forecastDate){
-        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
-        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
-        plot <- plot +
-          geom_text(data = notes,
-                    aes(x=x, y=y),
-                    color="#7B7B7B",
-                    hjust=0,
-                    vjust=1,
-                    size=5,
-                    label = paste("No IHME projection available \nfor the selected forecast date. \nShowing", lastIHMEdate, "instead."))
-        text <- T
-      }
-    }
     
     # Produce legend for data tags
     tagLegend <- ggplot(dataSubset, aes(x=Date, y=Mean, color=DataTag)) +
@@ -643,9 +577,141 @@ server <- function(input, output) {
     
     tagLegend <- get_legend(tagLegend)
     
-    # Combine plot and legends
-    p <- plot_grid(tagLegend, plot, ncol=1, rel_heights = c(1,30))
-    return(p)
+    # Print legend
+    grid.draw(tagLegend)
+  })
+  
+  output$infectionChart <- renderPlotly({
+    text <- F
+    
+    # Get selected models
+    models <- c("Apex", "IHME")
+    models <- models[c(input$Apex, input$IHME)]
+    
+    # Get most recent IHME model date
+    lastIHMEdate <- data %>%
+      filter(Source == "IHME") %>%
+      filter(date_model_run <= input$forecastDate) %>%
+      pull(date_model_run) %>%
+      max()
+    
+    # Subset data based on user inputs
+    dataSubset <- data %>% filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>% # Deaths only
+      filter(Jurisdiction %in% input$juris) # Only keep jurisdiction of interest
+    
+    oldestApexdate_juris <- dataSubset %>%
+      filter((DataType == "Modeled") & (Source == "Apex")) %>%
+      pull(date_model_run) %>%
+      min()
+    
+    dataSubset %<>% filter(!((DataTag == "Apex projection") & (!date_model_run == input$forecastDate))) %>% # Remove Apex predictions for all but the model run of interest
+      filter(!((DataTag == "IHME projection") & (!date_model_run == lastIHMEdate))) %>% # Remove IHME predictions for all but the model run of interest
+      filter(!((DataType == "Modeled") & (!Source %in% models))) # Only keep models of interest
+    
+    dataSubset_allDates <- dataSubset
+    
+    dataSubset %<>% filter(Date >= input$range[1] & Date <= input$range[2]) %>% # Only keep dates of interest
+      arrange(Metric, Jurisdiction, Date)
+    
+    dataSubset <- dataSubset[,colSums(is.na(dataSubset))<nrow(dataSubset)]
+    
+    # Validate
+    validate(need(models, ''))
+    validate(need(!((nrow(dataSubset_allDates) == 0) && (input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')])), ''))
+    validate(need(!(nrow(dataSubset_allDates) == 0), ''))
+    validate(need(!(((nrow(dataSubset) == 0) || (length(unique(dataSubset$Date)) == 1))), ''))
+    validate(need(!(models=="IHME" && !input$juris %in% data$Jurisdiction[which(data$Source == "IHME")]), ''))
+    validate(need(!(models=="IHME" && input$forecastDate < oldestIHMEdate_Infections), ''))
+    
+    # Produce main plot (without legend)
+    plot <- ggplot(dataSubset, aes(x=Date, y=Mean)) +
+      geom_line(aes(color=DataTag)) +
+      scale_color_manual(values=sourceLineColor) +
+      scale_fill_manual(values=sourceLineColor) +
+      scale_y_continuous(name="") +
+      guides(color=F, linetype=F) +
+      whiteTheme +
+      facet_wrap(vars(Metric), scales="free_y", ncol=1) +
+      theme(axis.title.x = element_blank(),
+            plot.margin=unit(c(5,5,10,5),"pt"),
+            strip.text = element_text(size=14, vjust = 0.5, margin = margin(0.1,0,0.1,0,"cm")),
+            legend.position='none',
+            panel.spacing = unit(0, "lines"))
+    
+    # Add geom_ribbon if there is modeled data
+    if("Modeled" %in% dataSubset$DataType){
+      plot <- plot +
+        geom_ribbon(data=dataSubset[which(dataSubset$DataType=="Modeled"),], aes(ymin=Lower, ymax=Upper, fill=DataTag), alpha=0.4, color=NA, show.legend=F)
+    }
+    
+    # Add error message if data is missing
+    if("IHME" %in% models){
+      
+      # If there is no IHME model for the jurisdiction
+      if(!input$juris %in% data$Jurisdiction[which(data$Source == 'IHME')]){
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
+        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
+        plot <- plot +
+          geom_text(data = notes,
+                    aes(x=x, y=y),
+                    color="#7B7B7B",
+                    hjust=0,
+                    vjust=1,
+                    size=0.01,
+                    label = paste0("No IHME projection available \nfor the selected jurisdiction."))
+        
+        text <- T
+        
+        # If there is no earlier IHME model for the jurisdiction
+      }else if(input$forecastDate < oldestIHMEdate_Infections){
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
+        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
+        plot <- plot +
+          geom_text(data = notes,
+                    aes(x=x, y=y),
+                    color="#7B7B7B",
+                    hjust=0,
+                    vjust=1,
+                    size=0.01,
+                    label = paste0("No IHME projection available prior to ", oldestIHMEdate_Infections, "."))
+        text <- T
+        
+        # If there is an earlier IHME model for the jurisdiction        
+      }else if(!lastIHMEdate == input$forecastDate){
+        notes <- data.frame(Metric = ordered(c("Daily Infections", "Cumulative Infections"), levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths")), x = min(dataSubset$Date))
+        notes$y <- sapply(notes$Metric, function(x) max(max(dataSubset$Upper[which(dataSubset$Metric == x)], na.rm=T), max(dataSubset$Mean[which(dataSubset$Metric == x)], na.rm=T)))
+        plot <- plot +
+          geom_text(data = notes,
+                    aes(x=x, y=y),
+                    color="#7B7B7B",
+                    hjust=0,
+                    vjust=1,
+                    size=0.01,
+                    label = paste("No IHME projection available \nfor the selected forecast date. \nShowing", lastIHMEdate, "instead."))
+        text <- T
+      }
+    }
+    
+    # Plotlyfy
+    plot <- ggplotly(plot, tooltip=c("Date", "Mean", "Upper", "Lower")) %>%
+      style(textposition = "bottom right") %>%
+      config(displayModeBar = F)
+    
+    # Disable hovering on geom_text
+    if(text){
+      
+      # If there is one type of modeled data
+      if(length(unique(dataSubset$DataTag[which(!dataSubset$DataType == 'Observed')])) == 1){
+        plot %<>% style(hoverinfo = "none", traces = c(5,6))
+        
+      # If there are two types of modeled data
+      }else{
+        plot %<>% style(hoverinfo = "none", traces = c(9,10))
+      }
+    }
+    
+    # Print plot
+    plot
   })
   
   output$downloadData <- downloadHandler(
