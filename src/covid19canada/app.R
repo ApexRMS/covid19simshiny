@@ -490,7 +490,8 @@ server <- function(input, output) {
     
     # Plotlyfy
     plot <- ggplotly(plot, tooltip=c("Date", "Mean", "Upper", "Lower")) %>%
-      style(textposition = "bottom right")
+      style(textposition = "bottom right") %>%
+      config(displayModeBar = F)
     
     # Disable hovering on geom_text
     if(text){
