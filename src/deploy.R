@@ -71,14 +71,28 @@ for(i in ihmeDates){
   
   if(!"est_infections_mean" %in% colnames(data)){
     data %<>% select(location_name, date, deaths_mean, deaths_lower, deaths_upper, totdea_mean, totdea_lower, totdea_upper) %>% # Only keep columns of interest
-      mutate(forecastDate = as.Date(gsub("_", "-", i))) %>% # Add forecast date
-      mutate(date = as.Date(date)) %>%
-      mutate(location_name = as.character(location_name))
+        mutate(forecastDate = as.Date(gsub("_", "-", i))) %>% # Add forecast date
+        mutate(date = as.Date(date)) %>%
+        mutate(location_name = as.character(location_name))
   }else{
-    data %<>% select(location_name, date, deaths_mean, deaths_lower, deaths_upper, totdea_mean, totdea_lower, totdea_upper, est_infections_mean, est_infections_lower, est_infections_upper) %>% # Only keep columns of interest
+    if(as.Date(i,"%Y_%m_%d")<as.Date("2020_06_06","%Y_%m_%d")){
+          data %<>% select(location_name, date, deaths_mean, deaths_lower, deaths_upper, totdea_mean, totdea_lower, totdea_upper, est_infections_mean, est_infections_lower, est_infections_upper) %>% # Only keep columns of interest
       mutate(forecastDate = as.Date(gsub("_", "-", i))) %>% # Add forecast date
       mutate(date = as.Date(date)) %>%
       mutate(location_name = as.character(location_name))
+    }else{
+      data %<>% select(location_name, date, deaths_mean_smoothed, deaths_lower_smoothed, deaths_upper_smoothed, totdea_mean_smoothed, totdea_lower_smoothed, totdea_upper_smoothed, est_infections_mean, est_infections_lower, est_infections_upper) %>% # Only keep columns of interest
+        mutate(forecastDate = as.Date(gsub("_", "-", i))) %>% # Add forecast date
+        mutate(date = as.Date(date)) %>%
+        mutate(location_name = as.character(location_name))
+      data = rename(data, deaths_mean = deaths_mean_smoothed)
+      data = rename(data, deaths_lower = deaths_lower_smoothed)
+      data = rename(data, deaths_upper = deaths_upper_smoothed)
+      data = rename(data, totdea_mean = totdea_mean_smoothed)
+      data = rename(data, totdea_lower = totdea_lower_smoothed)
+      data = rename(data, totdea_upper = totdea_upper_smoothed)
+    }
+
   }
   
   if(!exists("allData_IHME")){
@@ -197,8 +211,8 @@ write.csv(data, file=paste0(getwd(),"/covid19canada/data/", "data.csv"), row.nam
 library(rsconnect)
 options(rsconnect.http = "curl")
 userName = readline(prompt="Enter rsconnect user name: ")
-userToken = readline(prompt="Enter rsconnect token: ")
-userSecret = readline(prompt="Enter rsconnect secret: ")
+#userToken = readline(prompt="Enter rsconnect token: ")
+#userSecret = readline(prompt="Enter rsconnect secret: ")
 
 rsconnect::setAccountInfo(name=userName, token=userToken, secret=userSecret)
 
