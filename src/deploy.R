@@ -11,8 +11,11 @@
 # 3. Within the unzipped folder, there should be a unique subfolder. Ensure this subfolder is named after the correct IHME forecast date (format yy_mm_dd).
 # 4. Copy this subfolder (thereafter called the "date folder") to your "IHME" local folder (where IHME data for other dates is hosted).
 # 5. Check that the date folder contains a CSV called either "hospitalization_all_locs_corrected.csv" or "Hospitalization_all_locs.csv".
-# 6. Confirm that column names in this CSV are identical to those of previous dates.
-# 7. Drop the new date folder in the R906/IHME folder on S3.
+# 6. After June 13, there may be files with a similar name for different scenarios.
+#    Keep the reference file and rename it to "Hospitalization_all_locs.csv".
+#    Remove the others.
+# 7. Confirm that column names in this CSV are identical to those of previous dates.
+# 8. Drop the new date folder in the R906/IHME folder on S3.
 
 #### Workspace ####
 # Packages
@@ -64,6 +67,7 @@ cumulativeInfected <- read.csv(paste0(syncroSimDataDir, outputFiles[which(grepl(
 ihmeDates <- list.dirs(path = ihmeDataDir, full.names = F, recursive = F)
 
 for(i in ihmeDates){
+  # i = "2020_06_27"
   ihmeFile <- list.files(paste(ihmeDataDir, i, sep="/"), pattern="ospitalization_all_locs")
   data <- read.csv(paste(ihmeDataDir, i, ihmeFile, sep='/')) # Load
   
@@ -210,7 +214,7 @@ write.csv(data, file=paste0(getwd(),"/covid19canada/data/", "data.csv"), row.nam
 #### Deploy the app ####
 library(rsconnect)
 options(rsconnect.http = "curl")
-userName = readline(prompt="Enter rsconnect user name: ")
+#userName = readline(prompt="Enter rsconnect user name: ")
 #userToken = readline(prompt="Enter rsconnect token: ")
 #userSecret = readline(prompt="Enter rsconnect secret: ")
 
