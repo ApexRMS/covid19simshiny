@@ -48,9 +48,12 @@ data <- read_csv(file="data/data-obs.csv") %>%
 dataLoaded <- rep(FALSE, length(list.files("data", "data-20"))) %>%
   set_names(list.files("data", "data-20") %>% str_match("\\d.*\\d"))
 
+# Load vector of dates with IHME model data
+ihmeDates <- read_csv(file="data/ihme-dates.csv") %>% pull
+
 # Define a function to load in model data as requested by the user
 #   Note super assignment (<<-) used to update global variables
-loadModeledData <- function(modelDate){
+loadModeledData <- function(modelDate, addIHME = T){
   if(!(dataLoaded[modelDate])) {
     dataLoaded[modelDate] <<- TRUE
     data <<- read_csv(file= paste0("data/data-", modelDate, ".csv")) %>%
@@ -58,6 +61,17 @@ loadModeledData <- function(modelDate){
       mutate(Metric = ordered(Metric, levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths"))) %>%
       mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed"))) %>%
       bind_rows(data, .)
+
+    # Also load the data file that provides the relevant IHME model
+    # This can't be done if requesting a forecast prior to the first IHME model date
+    if(addIHME && modelDate > ihmeDates[1]) {
+      modelDate %>%
+        as.Date %>%
+        findInterval(ihmeDates) %>%    # returns index of the target date in ihmeDates
+        ihmeDates[.] %>%             # subsets ihmeDates using piped index
+        as.character %>%
+        loadModeledData(F)             # F is used to terminate recursion
+     }
   }
 }
 
