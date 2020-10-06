@@ -208,8 +208,22 @@ obsDate <- data %>% # date_model_run to use for Observation data
 
 data %<>% filter(!((DataType == "Observed") & (!date_model_run == obsDate))) # Remove observations for all but the most recent model
 
-# Save
-write.csv(data, file=paste0(getwd(),"/covid19canada/data/", "data.csv"), row.names = F)
+#### Save ####
+# Write observed data to its own file
+data %>%
+  filter(DataTag == 'Observed')  %>%
+  write_csv(paste0(getwd(),"/covid19canada/data/data-obs.csv"))
+
+# Split modelled data by date and save
+data %>%
+  filter(DataTag != 'Observed') %>%
+  group_by(date_model_run) %>%
+  group_split %>%
+  set_names(data %>% pull(date_model_run) %>% format('%Y-%m-%d') %>% unique) %>%
+  iwalk(~
+    if(!file.exists(paste0(getwd(),"/covid19canada/data/data-", .y, ".csv")))
+      write_csv(.x, paste0(getwd(),"/covid19canada/data/data-", .y, ".csv"))
+  )
 
 #### Deploy the app ####
 library(rsconnect)
