@@ -300,6 +300,8 @@ server <- function(input, output) {
   })
   
   output$deathChart <- renderPlotly({
+    loadModeledData(input$forecastDate %>% as.character)
+
     text <- F
     
     # Get selected models
