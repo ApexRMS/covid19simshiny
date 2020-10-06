@@ -35,11 +35,34 @@ onStop(thematic_off)
 brewer.pal(n = 8, name = "Dark2")
 sourceLineColor <- c("Observed"="#7B7B7B", "Apex projection"="#7d1428", "IHME projection"="#7cb961")
 
-# Load data
-data <- read.csv(file=paste0("data/", "data.csv")) %>%
+#### Data Loading ####
+
+# Load observed data
+data <- read_csv(file="data/data-obs.csv") %>%
   mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
   mutate(Metric = ordered(Metric, levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths"))) %>%
   mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed")))
+
+# Keep a record of which modelled data files are available and loaded
+#   \\d.*\\d is used to pull the date from file name
+dataLoaded <- rep(FALSE, length(list.files("data", "data-20"))) %>%
+  set_names(list.files("data", "data-20") %>% str_match("\\d.*\\d"))
+
+# Define a function to load in model data as requested by the user
+#   Note super assignment (<<-) used to update global variables
+loadModeledData <- function(modelDate){
+  if(!(dataLoaded[modelDate])) {
+    dataLoaded[modelDate] <<- TRUE
+    data <<- read_csv(file= paste0("data/data-", modelDate, ".csv")) %>%
+      mutate(Date = as.Date(Date), date_model_run = as.Date(date_model_run)) %>%
+      mutate(Metric = ordered(Metric, levels=c("Daily Infections", "Daily Deaths", "Cumulative Infections", "Cumulative Deaths"))) %>%
+      mutate(DataTag = ordered(DataTag, level=c("IHME projection", "Apex projection", "Observed"))) %>%
+      bind_rows(data, .)
+  }
+}
+
+# Load most recent models
+loadModeledData(dataLoaded %>% tail(1) %>% names)
 
 #### Helpers ####
 forecastDates <- sort(unique(data$date_model_run))
