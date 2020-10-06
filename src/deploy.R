@@ -70,9 +70,9 @@ for(i in ihmeDates){
   # i = "2020_06_27"
   ihmeFile <- list.files(paste(ihmeDataDir, i, sep="/"), pattern="ospitalization_all_locs")
   data <- read.csv(paste(ihmeDataDir, i, ihmeFile, sep='/')) # Load
-  
+
   if("date_reported" %in% colnames(data)) data %<>% rename(date = date_reported) # Rename column "date_reported", if present
-  
+
   if(!"est_infections_mean" %in% colnames(data)){
     data %<>% select(location_name, date, deaths_mean, deaths_lower, deaths_upper, totdea_mean, totdea_lower, totdea_upper) %>% # Only keep columns of interest
         mutate(forecastDate = as.Date(gsub("_", "-", i))) %>% # Add forecast date
@@ -98,7 +98,7 @@ for(i in ihmeDates){
     }
 
   }
-  
+
   if(!exists("allData_IHME")){
     allData_IHME <- data
   }else{
@@ -224,6 +224,15 @@ data %>%
     if(!file.exists(paste0(getwd(),"/covid19canada/data/data-", .y, ".csv")))
       write_csv(.x, paste0(getwd(),"/covid19canada/data/data-", .y, ".csv"))
   )
+
+# Write list of dates which provide IHME models
+data %>%
+  filter(Source == 'IHME') %>%
+  pull(date_model_run) %>%
+  unique %>%
+  sort %>%
+  tibble(ihme = .) %>%
+  write_csv(paste0(getwd(),"/covid19canada/data/ihme-dates.csv"))
 
 #### Deploy the app ####
 library(rsconnect)
