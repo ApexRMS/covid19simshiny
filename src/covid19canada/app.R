@@ -65,23 +65,15 @@ loadModeledData <- function(modelDate){
 loadModeledData(dataLoaded %>% tail(1) %>% names)
 
 #### Helpers ####
-forecastDates <- sort(unique(data$date_model_run))
+forecastDates <- dataLoaded %>% names %>% as.Date
 
-defaultForecastDate <- max(data$date_model_run[which(data$Source == "Apex")])
+defaultForecastDate <- tail(forecastDates, 1)
 
 jurisdictions <- sort(unique(data$Jurisdiction))
 
-oldestIHMEdate_Deaths <- data %>%
-  filter(Source == "IHME") %>%
-  filter(Metric %in% c("Daily Deaths", "Cumulative Deaths")) %>%
-  pull(date_model_run) %>%
-  min()
+oldestIHMEdate_Deaths <- as.Date('2020-04-22')
 
-oldestIHMEdate_Infections <- data %>%
-  filter(Source == "IHME") %>%
-  filter(Metric %in% c("Daily Infections", "Cumulative Infections")) %>%
-  pull(date_model_run) %>%
-  min()
+oldestIHMEdate_Infections <- as.Date('2020-05-10')
 
 minDate <- min(data$Date[which(data$Source == "Apex")])
 maxDate <- max(data$Date[which(data$Source == "Apex")])
