@@ -68,7 +68,7 @@ loadModeledData <- function(modelDate, addIHME = T){
       modelDate %>%
         as.Date %>%
         findInterval(ihmeDates) %>%    # returns index of the target date in ihmeDates
-        ihmeDates[.] %>%             # subsets ihmeDates using piped index
+        ihmeDates[.] %>%               # subsets ihmeDates using piped index
         as.character %>%
         loadModeledData(F)             # F is used to terminate recursion
      }
@@ -300,6 +300,7 @@ server <- function(input, output) {
   })
   
   output$deathChart <- renderPlotly({
+    # Check requested data is loaded
     loadModeledData(input$forecastDate %>% as.character)
 
     text <- F

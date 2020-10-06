@@ -218,14 +218,14 @@ data %>%
 data %>%
   filter(DataTag != 'Observed') %>%
   group_by(date_model_run) %>%
-  group_split %>%
+  group_split %>%                                                               # Split into a list of tibbles by date
   set_names(data %>% pull(date_model_run) %>% format('%Y-%m-%d') %>% unique) %>%
-  iwalk(~
-    if(!file.exists(paste0(getwd(),"/covid19canada/data/data-", .y, ".csv")))
+  iwalk(~                                                                       # write a csv for each list entry (.x) using the element's name (.y) 
+    if(!file.exists(paste0(getwd(),"/covid19canada/data/data-", .y, ".csv")))   # Avoid rewriting existing files unnecessarily
       write_csv(.x, paste0(getwd(),"/covid19canada/data/data-", .y, ".csv"))
   )
 
-# Write list of dates which provide IHME models
+# Save the list of dates with IHME model data for use by app
 data %>%
   filter(Source == 'IHME') %>%
   pull(date_model_run) %>%
