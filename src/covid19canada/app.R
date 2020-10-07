@@ -614,6 +614,9 @@ server <- function(input, output) {
   })
   
   output$infectionChart <- renderPlotly({
+    # Check requested data is loaded
+    loadModeledData(input$forecastDate %>% as.character)
+    
     text <- F
     
     # Get selected models
